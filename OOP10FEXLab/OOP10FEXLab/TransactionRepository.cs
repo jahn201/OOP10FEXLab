@@ -2,20 +2,23 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using MySql.Data.MySqlClient;
 
 namespace OOP10FEXLab
 {
     /// <summary>
-    /// Saves kiosk orders to the transactions record (transactions.txt), one line per ordered meal.
-    /// Format per line: OrderNo|DateTime|OrderType|Payment|MealId|MealName|Qty|Price|Subtotal|OrderTotal
+    /// Saves kiosk orders to the transactions record: the database table transactions_tbl,
+    /// plus a local copy in transactions.txt that also keeps the order numbers.
     /// </summary>
     public class TransactionRepository
     {
         private const int FirstOrderNumber = 1001;
         private readonly string filePath;
 
+        private const string GroupMembers = "Members: Monsalud, SURNAME2, SURNAME3";
+
         /// <summary>
-        /// Uses transactions.txt beside the running program.
+        /// Uses transactions.txt beside the running program for the local copy.
         /// </summary>
         public TransactionRepository()
             : this(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "transactions.txt"))
@@ -23,7 +26,7 @@ namespace OOP10FEXLab
         }
 
         /// <summary>
-        /// Uses the given transactions file.
+        /// Uses the given file for the local copy.
         /// </summary>
         public TransactionRepository(string filePath)
         {
@@ -54,9 +57,44 @@ namespace OOP10FEXLab
         }
 
         /// <summary>
-        /// Appends every item of the order to the transactions record.
+        /// Saves the order to transactions_tbl (one row per package ordered), then to the local file.
+        /// Nothing is saved to the database unless every row succeeds.
         /// </summary>
         public void SaveOrder(Order order)
+        {
+            SaveToDatabase(order);
+            SaveToFile(order);
+        }
+
+        private static void SaveToDatabase(Order order)
+        {
+            const string sql = "INSERT INTO transactions_tbl (package_name, transaction_date) VALUES (@pkg, @date)";
+
+            DatabaseConnection database = DatabaseConnection.CreateDefault();
+            using (MySqlConnection connection = database.CreateConnection())
+            {
+                connection.Open();
+                using (MySqlTransaction transaction = connection.BeginTransaction())
+                {
+                    foreach (OrderItem item in order.Items)
+                    {
+                        for (int i = 0; i < item.Quantity; i++)
+                        {
+                            using (MySqlCommand command = new MySqlCommand(sql, connection, transaction))
+                            {
+                                command.Parameters.AddWithValue("@pkg", item.Meal.Name + "\n" + GroupMembers);
+                                command.Parameters.AddWithValue("@date", order.OrderDate);
+                                command.ExecuteNonQuery();
+                            }
+                        }
+                    }
+
+                    transaction.Commit();
+                }
+            }
+        }
+
+        private void SaveToFile(Order order)
         {
             List<string> lines = new List<string>();
 

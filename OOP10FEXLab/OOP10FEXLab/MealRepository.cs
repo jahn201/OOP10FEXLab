@@ -31,13 +31,13 @@ namespace OOP10FEXLab
         }
 
         /// <summary>
-        /// Reads every package meal from the file. Creates the file with sample meals if it is missing.
+        /// Reads every package meal from the file.
         /// </summary>
         public List<Meal> GetAllMeals()
         {
             if (!File.Exists(filePath))
             {
-                File.WriteAllLines(filePath, GetDefaultMealLines());
+                throw new FileNotFoundException("meals.txt was not found beside the program.", filePath);
             }
 
             List<Meal> meals = new List<Meal>();
@@ -80,26 +80,6 @@ namespace OOP10FEXLab
         public List<Meal> GetMealsByCategory(string category)
         {
             return GetAllMeals().Where(m => m.Category == category).ToList();
-        }
-
-        private static string[] GetDefaultMealLines()
-        {
-            return new[]
-            {
-                "# Id|Category|Name|Price|ImagePath",
-                "C1|Chicken|1pc Fried Chicken with Rice|99.00|images/c1.png",
-                "C2|Chicken|2pc Fried Chicken with Rice|185.00|images/c2.png",
-                "C3|Chicken|1pc Spicy Chicken with Rice|105.00|images/c3.png",
-                "S1|Spaghetti|Sweet Spaghetti|65.00|images/s1.png",
-                "S2|Spaghetti|1pc Chicken with Spaghetti|119.00|images/s2.png",
-                "S3|Spaghetti|Spaghetti with Burger and Drink|125.00|images/s3.png",
-                "B1|Burgers|Classic Burger|45.00|images/b1.png",
-                "B2|Burgers|Cheese Burger with Fries and Drink|110.00|images/b2.png",
-                "F1|Family Meals|Bucket of 6 Chicken|475.00|images/f1.png",
-                "F2|Family Meals|Spaghetti Family Pan|299.00|images/f2.png",
-                "D1|Desserts and Drinks|Peach Mango Pie|45.00|images/d1.png",
-                "D2|Desserts and Drinks|Iced Tea (Large)|55.00|images/d2.png"
-            };
         }
     }
 }
